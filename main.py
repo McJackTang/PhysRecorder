@@ -12,6 +12,12 @@ start_time, end_time = 0, 0
 alive = True
 dir_path = ''
 
+# check if p001/v01 exist
+existing_conflit = False
+if os.path.exists('p001') or os.path.exists('p001/v01'):
+    existing_conflit = True
+
+
 def connect_cam():
     global frames, cap
     frames = []
@@ -146,11 +152,11 @@ lb4.place(x=97, y=0)
 
 
 diff = 25
-lb5 = tk.Label(window, text='name', font=('Times',15))
+lb5 = tk.Label(window, text='name(input ID)', font=('Times',15))
 lb5.place(x=10, y=30+diff)
 
 text1 = tk.Entry(window)
-text1.insert(tk.INSERT, 'p001')
+# text1.insert(tk.INSERT, 'p001')
 text1.place(x=5, y=60+diff)
 
 lb6 = tk.Label(window, text='video', font=('Times',15))
@@ -160,16 +166,16 @@ text2 = tk.Entry(window)
 text2.insert(tk.INSERT, 'v01')
 text2.place(x=5, y=110+diff)
 
-lb7 = tk.Label(window, text='duration', font=('Times',15))
+lb7 = tk.Label(window, text='duration(s)', font=('Times',15))
 lb7.place(x=10, y=130+diff)
 
 text3 = tk.Entry(window)
 text3.place(x=5, y=160+diff)
-text3.insert(tk.INSERT, '0')
+text3.insert(tk.INSERT, '30') # default as 30s
 
 recording = False
 def b_record():
-    global recording
+    global recording, conflict
     if not (frames and time.time()-frames[-1][-1]<0.2):
         recording = False
         b1.config(text='start')
@@ -191,7 +197,7 @@ def write(x):
     cv2.imwrite(x[1], x[0], [cv2.IMWRITE_PNG_COMPRESSION, 1])
 
 def record():
-    global bvp, hr, spo2, frames, recording, start_time,end_time, f_n, dir_path
+    global bvp, hr, spo2, frames, recording, start_time,end_time, f_n, dir_path, conflict
     f_n, dir_path = 0, ''
     start_time = 0
     bvp, hr, spo2, frames = bvp[-1:], hr[-1:], spo2[-1:], frames[-1:]
@@ -200,6 +206,11 @@ def record():
     dir_path_ = f'{text1.get()}/{text2.get()}'
     if not os.path.exists(dir_path_):
         os.mkdir(dir_path_)
+        conflict = False
+    else:
+        conflict = True
+        lb9.config(text='×', font=('Times',10), fg='red')
+        return
     dir_path = dir_path_
     with open(f'{dir_path}/missed_frames.csv', 'w') as csv:
         csv.write('timestamp\n')
@@ -326,7 +337,7 @@ sel4 = tk.Radiobutton(window, text='MJPG', variable=v2, value='MJPG')
 sel4.place(x=5, y=240+diff)
 sel5 = tk.Radiobutton(window, text='YUY2', variable=v2, value='YUY2')
 sel5.place(x=65, y=240+diff)
-sel5.select()
+sel4.select() # default as MJPG
 
 lb12 = tk.Label(window, text='file codec', font=('Times',15))
 lb12.place(x=0, y=260+diff)
@@ -348,10 +359,10 @@ ck3.place(x=125, y=280+diff)
 ck4.place(x=5, y=300+diff)
 ck5.place(x=65, y=300+diff)
 ck6.place(x=125, y=300+diff)
-ck6.select()
+ck4.select() # default as MJPG
 
 def f_lb():
-    global res, fourcc, fps, save_fourcc, cam_id
+    global res, fourcc, fps, save_fourcc, cam_id, conflict
     if bvp and time.time()-bvp[-1][-1]<0.2:
         lb2.config(text='√', font=('Times',10), fg='green')
     else:
@@ -360,7 +371,7 @@ def f_lb():
         lb4.config(text='√', font=('Times',10), fg='green')
     else:
         lb4.config(text='×', font=('Times',10), fg='red')
-    if recording:
+    if recording and not conflict:
         lb9.config(text='√', font=('Times',10), fg='green')
     else:
         lb9.config(text='×', font=('Times',10), fg='red')
